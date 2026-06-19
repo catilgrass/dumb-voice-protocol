@@ -1,0 +1,14 @@
+[package]
+name = "dumb-voice-protocol"
+version = "0.1.0"
+edition = "2024"
+description = "A CLI program that reads your microphone device and outputs information to stdout/IPC."
+
+[[bin]]
+name = "dmvop"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive"] }
+tokio = { version = "1.52.3", features = ["net", "rt", "rt-multi-thread", "macros"] }
+vtx-engine = "0.3.1"
