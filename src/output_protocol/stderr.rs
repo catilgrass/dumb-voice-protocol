@@ -4,7 +4,7 @@ use crate::OutputProtocol;
 pub struct StandardErrorProtocol;
 
 impl OutputProtocol for StandardErrorProtocol {
-    async fn init(self) {
+    async fn init(&self) {
         // No initialization needed
     }
 
