@@ -16,6 +16,8 @@ Options
   -L, --list-devices           List microphones and exit.
       --list-models            List Whisper models and exit.
       --download-model=<name>  Download a model and exit.
+      --instant                Aggressive mode — shorter segments for
+                                near-real-time output. Speak slowly.
   -V, --verbose                Show debug output.
   -h, --help                   Show this help.
 

@@ -116,6 +116,16 @@ async fn main() {
 
     let mut builder = EngineBuilder::new().app_name("dmvop").model(model);
 
+    if args.instant {
+        debug_log!("[dmvop] Instant mode: aggressive VAD for near-real-time output");
+        builder = builder
+            .vad_voiced_onset_ms(40)
+            .vad_whisper_onset_ms(60)
+            .segment_max_duration_ms(800)
+            .segment_word_break_grace_ms(100)
+            .word_break_segmentation_enabled(true);
+    }
+
     if let Some(ref lang) = args.lang {
         debug_log!("[dmvop] Language hint: {}", lang);
         builder = builder.language(lang.as_str());

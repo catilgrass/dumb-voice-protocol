@@ -23,6 +23,11 @@ pub struct DMVOPArguments {
     // Show help
     #[arg(long = "help", short = 'h')]
     pub help: bool,
+
+    // Instant mode — aggressive VAD for near-real-time output
+    #[arg(long = "instant")]
+    pub instant: bool,
+
     // Verbose output (show debug messages)
     #[arg(long = "verbose", short = 'V')]
     pub verbose: bool,
