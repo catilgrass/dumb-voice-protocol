@@ -63,6 +63,12 @@ async fn main() {
     // Set global verbose flag
     VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);
 
+    // When verbose, let whisper.cpp print its C lib logs to stderr
+    if args.verbose {
+        vtx_engine::transcription::whisper_ffi::WHISPER_LOGS_ENABLED
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+
     // ---------------------------------------------------------------
     // --list-models: show available models and exit
     // ---------------------------------------------------------------
@@ -82,7 +88,7 @@ async fn main() {
     // ---------------------------------------------------------------
     // 1. Build the vtx-engine (needed for both listing and capture)
     // ---------------------------------------------------------------
-    eprintln!("[dmvop] Initializing voice engine...");
+    debug_log!("[dmvop] Initializing voice engine...");
 
     let model = vtx_engine::WhisperModel::parse_identifier(&args.model).unwrap_or_else(|| {
         eprintln!(
@@ -92,7 +98,7 @@ async fn main() {
         std::process::exit(1);
     });
 
-    eprintln!(
+    debug_log!(
         "[dmvop] Using model: {} ({})",
         model.config_key(),
         model.display_name()
@@ -101,7 +107,7 @@ async fn main() {
     let mut builder = EngineBuilder::new().app_name("dmvop").model(model);
 
     if let Some(ref lang) = args.lang {
-        eprintln!("[dmvop] Language hint: {}", lang);
+        debug_log!("[dmvop] Language hint: {}", lang);
         builder = builder.language(lang.as_str());
     }
 
@@ -118,7 +124,7 @@ async fn main() {
         eprintln!("[dmvop] Model not found at: {}", model_status.path);
         eprintln!("[dmvop] Downloading model, please wait...");
         match engine.download_model().await {
-            Ok(_) => eprintln!("[dmvop] Model downloaded successfully"),
+            Ok(_) => debug_log!("[dmvop] Model downloaded successfully"),
             Err(e) => {
                 eprintln!("[dmvop] Failed to download model: {}", e);
                 eprintln!("[dmvop] You can manually download a model from:");
@@ -128,7 +134,7 @@ async fn main() {
             }
         }
     } else {
-        eprintln!("[dmvop] Model found: {}", model_status.path);
+        debug_log!("[dmvop] Model found: {}", model_status.path);
     }
 
     // ---------------------------------------------------------------
@@ -199,7 +205,7 @@ async fn main() {
 
     match &device {
         Some(d) => {
-            eprintln!("[dmvop] Using input device: {} (id: {})", d.name, d.id);
+            debug_log!("[dmvop] Using input device: {} (id: {})", d.name, d.id);
         }
         None => {
             eprintln!(
@@ -215,7 +221,7 @@ async fn main() {
         .await
         .expect("Failed to start audio capture");
 
-    eprintln!("[dmvop] Capture started. Waiting for speech...");
+    debug_log!("[dmvop] Capture started. Waiting for speech...");
 
     // ---------------------------------------------------------------
     // 5. Event loop — listen for transcription & audio level events
@@ -280,7 +286,7 @@ async fn main() {
         }
     }
 
-    eprintln!("[dmvop] Shutting down.");
+    debug_log!("[dmvop] Shutting down.");
 }
 
 /// Resolve the format pattern from either the command-line `--format` value
@@ -406,11 +412,11 @@ async fn download_model_cli(model_name: &str) {
 
     let status = engine.check_model_status();
     if status.available {
-        eprintln!("[dmvop] Model already exists at: {}", status.path);
+        debug_log!("[dmvop] Model already exists at: {}", status.path);
         return;
     }
 
-    eprintln!(
+    debug_log!(
         "[dmvop] Downloading {} ({} MB)...",
         model.config_key(),
         model.size_mb()

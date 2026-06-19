@@ -15,7 +15,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 
 [dependencies.vtx-engine]
 git = "https://github.com/Weicao-CatilGrass/vtx-engine"
-rev = "efa61f80156c226f76bf12e5cedf11c92af22ccb"
+rev = "864889b97c52d31098670d33e10d62a96ec8c41e"
 
 [profile.dev]
 opt-level = 0
