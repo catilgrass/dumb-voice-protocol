@@ -1,0 +1,33 @@
+Usage: dmvop [OPTIONS]
+
+Options
+      --device=<name>          Microphone (WASAPI name or device ID). Required.
+  -O, --output=<mode>          Output destination(s). May be repeated. [default: stdout]
+                                 stdout | stderr | tcp | udp | udp-broadcast | ipc
+  -m, --model=<model>          Whisper model. [default: base_en]
+      --lang=<code>            Language hint (zh, ja, en, fr...). Skips detection.
+  -f, --format=<pattern>       Output format with %{vol}, %{word}, %{confid}.
+                                 [default: %{vol},%{word}]
+  -S, --format-file=<path>     Read format from file.
+  -p, --port=<num>             Port for TCP/UDP modes. [default: 5117]
+      --socket-file=<path>     Unix socket path for IPC. [default: ./dmvop.sock]
+      --subnet-mask=<mask>     Subnet mask for UDP broadcast.
+                                 [default: 255.255.255.0]
+  -L, --list-devices           List microphones and exit.
+      --list-models            List Whisper models and exit.
+      --download-model=<name>  Download a model and exit.
+  -V, --verbose                Show debug output.
+  -h, --help                   Show this help.
+
+Examples
+  dmvop --list-devices
+  dmvop --device="My Mic" -O stdout -O tcp -m small --lang=zh
+  dmvop --device="My Mic" -f "[%{vol}] %{word}"
+  dmvop --device="My Mic" -O udp-broadcast -p 8888
+  dmvop --download-model=small
+
+Notes
+  - First run downloads the model (~142 MB for base_en).
+  - Use --verbose to see speech events and timing.
+  - Ctrl+C to stop.
+  - All outputs initialize in parallel.

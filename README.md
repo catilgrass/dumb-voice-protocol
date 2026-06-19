@@ -7,11 +7,7 @@ This is a CLI program that reads your microphone device and outputs information 
 # Usage
 
 ```
-dmvop --output=stdout --fmt="%{vol},%{word},%{confidence}" --device="/dev/mymic"
-      --output=stderr --fmt-file="./fmt.txt"
-      --output=ipc
-      --output=tcp
-      --output=udp
+dmvop --help
 ```
 
 # License

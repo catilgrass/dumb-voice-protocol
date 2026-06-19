@@ -60,8 +60,6 @@ impl OutputProtocol for IPCOutputProtocol {
                 debug_log!("[IPC] Connected to {}", self.socket_path.display());
                 let bytes = format!("{}\n", message);
                 let _ = stream.writable().await;
-                // We can't use the stream directly here since we need to store it
-                // for future sends. Let's store and send.
                 let _ = stream.try_write(bytes.as_bytes());
                 *guard = Some(stream);
             }

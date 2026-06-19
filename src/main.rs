@@ -8,8 +8,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use vtx_engine::EngineBuilder;
 
-/// Output channel enum — wraps each OutputProtocol implementation so we can
-/// store a heterogeneous collection and dispatch `send` without trait objects.
 enum OutputChannel {
     Stdout(Arc<output_protocol::StandardOutputProtocol>),
     Stderr(Arc<output_protocol::StandardErrorProtocol>),
@@ -58,7 +56,19 @@ async fn main() {
         .with_target(false)
         .init();
 
-    let args = DMVOPArguments::parse();
+    let args = match DMVOPArguments::try_parse() {
+        Ok(a) => a,
+        Err(_) => {
+            eprintln!("error: invalid arguments. Use --help for usage.");
+            std::process::exit(1);
+        }
+    };
+
+    // Handle --help immediately
+    if args.help {
+        print!("{}", HELP_TEXT);
+        return;
+    }
 
     // Set global verbose flag
     VERBOSE.store(args.verbose, std::sync::atomic::Ordering::Relaxed);
@@ -86,7 +96,7 @@ async fn main() {
     }
 
     // ---------------------------------------------------------------
-    // 1. Build the vtx-engine (needed for both listing and capture)
+    // Build the vtx-engine (needed for both listing and capture)
     // ---------------------------------------------------------------
     debug_log!("[dmvop] Initializing voice engine...");
 
@@ -138,7 +148,7 @@ async fn main() {
     }
 
     // ---------------------------------------------------------------
-    // 2. List devices and exit?
+    // List devices and exit?
     // ---------------------------------------------------------------
     let devices = engine.list_input_devices();
 
@@ -158,12 +168,12 @@ async fn main() {
     }
 
     // ---------------------------------------------------------------
-    // 3. Resolve the format pattern
+    // Resolve the format pattern
     // ---------------------------------------------------------------
     let pattern = resolve_format_pattern(args.format_pattern.as_deref(), args.format_file.as_ref());
 
     // ---------------------------------------------------------------
-    // 4. Create and initialize output channels
+    // Create and initialize output channels
     // ---------------------------------------------------------------
     let mut channels: Vec<OutputChannel> = Vec::new();
 
@@ -186,7 +196,7 @@ async fn main() {
     }
 
     // ---------------------------------------------------------------
-    // 5. Find the requested device and start capture
+    // Find the requested device and start capture
     // ---------------------------------------------------------------
     let device_name = match &args.device_name {
         Some(n) => n.as_str(),
@@ -224,7 +234,7 @@ async fn main() {
     debug_log!("[dmvop] Capture started. Waiting for speech...");
 
     // ---------------------------------------------------------------
-    // 5. Event loop — listen for transcription & audio level events
+    // Event loop — listen for transcription & audio level events
     // ---------------------------------------------------------------
     let mut last_volume_db: f32 = -60.0;
 

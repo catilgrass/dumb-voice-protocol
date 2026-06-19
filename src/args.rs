@@ -14,9 +14,15 @@ macro_rules! debug_log {
     };
 }
 
+/// The full help text embedded at compile time.
+pub static HELP_TEXT: &str = include_str!("../help.txt");
+
 #[derive(clap::Parser)]
 #[command(name = "dmvop", disable_help_flag = true, disable_version_flag = true)]
 pub struct DMVOPArguments {
+    // Show help
+    #[arg(long = "help", short = 'h')]
+    pub help: bool,
     // Verbose output (show debug messages)
     #[arg(long = "verbose", short = 'V')]
     pub verbose: bool,
