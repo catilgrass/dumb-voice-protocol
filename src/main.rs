@@ -31,7 +31,7 @@ impl OutputChannel {
         }
     }
 
-    async fn send(&self, message: &str) {
+    async fn send_to_channel(&self, message: &str) {
         match self {
             OutputChannel::Stdout(p) => p.clone().send(message).await,
             OutputChannel::Stderr(p) => p.clone().send(message).await,
@@ -252,17 +252,19 @@ async fn main() {
         match rx.recv().await {
             Ok(event) => match event {
                 vtx_engine::EngineEvent::TranscriptionComplete(result) => {
-                    let formatted = format_output(&pattern, &result.text, 0.0, last_volume_db);
+                    let raw = maybe_to_pinyin(&result.text, args.use_pinyin);
+                    let formatted = format_output(&pattern, &raw, 0.0, last_volume_db);
 
                     for ch in &channels {
-                        ch.send(&formatted).await;
+                        ch.send_to_channel(&formatted).await;
                     }
                 }
                 vtx_engine::EngineEvent::TranscriptionSegment(segment) => {
-                    let formatted = format_output(&pattern, &segment.text, 0.0, last_volume_db);
+                    let raw = maybe_to_pinyin(&segment.text, args.use_pinyin);
+                    let formatted = format_output(&pattern, &raw, 0.0, last_volume_db);
 
                     for ch in &channels {
-                        ch.send(&formatted).await;
+                        ch.send_to_channel(&formatted).await;
                     }
                 }
                 vtx_engine::EngineEvent::VisualizationData(viz) => {

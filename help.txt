@@ -6,6 +6,7 @@ Options
                                  stdout | stderr | tcp | udp | udp-broadcast | ipc
   -m, --model=<model>          Whisper model. [default: base_en]
       --lang=<code>            Language hint (zh, ja, en, fr...). Skips detection.
+      --pinyin                 Convert Chinese output to pinyin format.
   -f, --format=<pattern>       Output format with %{vol}, %{word}, %{confid}.
                                  [default: %{vol},%{word}]
   -S, --format-file=<path>     Read format from file.

@@ -117,6 +117,10 @@ pub struct DMVOPArguments {
         require_equals = true
     )]
     pub subnet_mask: String,
+
+    // Convert text output to pinyin (Chinese romanization)
+    #[arg(long = "pinyin")]
+    pub use_pinyin: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -176,6 +180,16 @@ pub fn format_output(pattern: &str, word: &str, confidence: f32, volume: f32) ->
     result = result.replace("%{confidence}", &format!("{:.1}", confidence));
 
     result
+}
+
+/// Convert transcribed text to pinyin if the `use_pinyin` flag is set.
+/// Otherwise returns the original text as a String.
+pub fn maybe_to_pinyin(text: &str, use_pinyin: bool) -> String {
+    if use_pinyin {
+        pinyin::to_pinyin_vec(text, pinyin::Pinyin::plain).join(" ")
+    } else {
+        text.to_string()
+    }
 }
 
 #[cfg(test)]
