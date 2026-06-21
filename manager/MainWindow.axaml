@@ -1,9 +1,240 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="manager.MainWindow"
-        Title="manager">
-    Welcome to Avalonia!
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignWidth="800"
+    d:DesignHeight="450"
+    x:Class="manager.MainWindow"
+    Title="DMVOP Manager"
+    Width="800"
+    MinWidth="500"
+>
+    <Grid ColumnDefinitions="Auto,*">
+        <ScrollViewer Grid.Column="0" Width="300" Background="#2d2d2d">
+            <StackPanel Margin="10" Spacing="12">
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Device"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="DeviceBox"
+                        Text="auto"
+                        Watermark="device name or auto"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Output Format"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="FormatBox"
+                        Text="%{vol},%{word}"
+                        Watermark="e.g. %{vol},%{word}"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Model"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="6">
+                        <ComboBox
+                            x:Name="ModelBox"
+                            Grid.Column="0"
+                            SelectedIndex="0"
+                        >
+                            <ComboBoxItem Content="tiny.en" />
+                            <ComboBoxItem Content="tiny" />
+                            <ComboBoxItem Content="base.en" />
+                            <ComboBoxItem Content="base" />
+                            <ComboBoxItem Content="small.en" />
+                            <ComboBoxItem Content="small" />
+                            <ComboBoxItem Content="medium.en" />
+                            <ComboBoxItem Content="medium" />
+                            <ComboBoxItem Content="large_v3_turbo" />
+                            <ComboBoxItem Content="large_v3" />
+                        </ComboBox>
+                        <Button
+                            x:Name="DownloadModelButton"
+                            Grid.Column="1"
+                            Content="Download"
+                            Width="60"
+                        />
+                    </Grid>
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Language"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="LangBox"
+                        Text="en"
+                        Watermark="e.g. en, zh, ja"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Output Modes"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <CheckBox
+                        x:Name="StdoutCheck"
+                        Content="stdout"
+                        IsChecked="True"
+                    />
+                    <CheckBox
+                        x:Name="TcpCheck"
+                        Content="tcp"
+                        IsChecked="True"
+                    />
+                    <CheckBox x:Name="UdpCheck" Content="udp" />
+                    <CheckBox
+                        x:Name="UdpBroadcastCheck"
+                        Content="udp-broadcast"
+                    />
+                    <CheckBox x:Name="IpcCheck" Content="ipc (Unix only)" />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Port"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="PortBox"
+                        Text="5117"
+                        Watermark="port number"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Instant Mode"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <CheckBox
+                        x:Name="InstantCheck"
+                        IsChecked="False"
+                        Content="Enable"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Subnet Mask"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="SubnetMaskBox"
+                        Text="255.255.255.0"
+                        Watermark="e.g. 255.255.255.0"
+                    />
+                </StackPanel>
+
+                <StackPanel x:Name="SocketFilePanel" Spacing="4">
+                    <TextBlock
+                        Text="Socket File"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox
+                        x:Name="SocketFileBox"
+                        Text="./dmvop.sock"
+                        Watermark="path to socket file"
+                    />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Models Directory"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox x:Name="ModelsDirBox" Watermark="./models" />
+                </StackPanel>
+
+                <StackPanel Spacing="4">
+                    <TextBlock
+                        Text="Post-processor"
+                        FontWeight="Bold"
+                        Foreground="White"
+                    />
+                    <TextBox x:Name="PostBox" Watermark="e.g. +pinyin(tone)" />
+                </StackPanel>
+
+                <TextBlock
+                    x:Name="StatusLabel"
+                    Text="Ready"
+                    Foreground="#aaa"
+                    FontSize="12"
+                />
+
+                <TextBlock Height="8" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Column="1" Background="#1e1e1e" RowDefinitions="Auto,*">
+            <Border Grid.Row="0" Background="#252525" Padding="12,8">
+                <Grid ColumnDefinitions="Auto,Auto,*">
+                    <Ellipse
+                        x:Name="StatusLight"
+                        Width="14"
+                        Height="14"
+                        Fill="Red"
+                        VerticalAlignment="Center"
+                        Margin="0,0,8,0"
+                    />
+
+                    <TextBlock
+                        x:Name="StatusTextRight"
+                        Grid.Column="1"
+                        Text="Stopped"
+                        Foreground="#888"
+                        FontSize="14"
+                        VerticalAlignment="Center"
+                    />
+
+                    <Button
+                        x:Name="ActionButton"
+                        Grid.Column="2"
+                        Content="Start"
+                        Width="90"
+                        Height="28"
+                        FontSize="13"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                    />
+                </Grid>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" Background="#1a1a1a" Margin="0,1,0,0">
+                <TextBlock
+                    x:Name="OutputArea"
+                    FontFamily="Consolas, Courier New, monospace"
+                    FontSize="12"
+                    Foreground="#aaa"
+                    Text=""
+                    TextWrapping="Wrap"
+                    Margin="8"
+                />
+            </ScrollViewer>
+        </Grid>
+    </Grid>
 </Window>

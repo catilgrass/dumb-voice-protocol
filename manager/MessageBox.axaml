@@ -1,0 +1,25 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignWidth="400"
+    d:DesignHeight="150"
+    x:Class="manager.MessageBox"
+    Title="Prompt"
+    SizeToContent="WidthAndHeight"
+    WindowStartupLocation="CenterOwner"
+    CanResize="False"
+    ShowInTaskbar="False"
+>
+    <StackPanel Margin="20" Spacing="16">
+        <TextBlock x:Name="MessageText" Text="" FontSize="14" />
+        <StackPanel
+            x:Name="ButtonPanel"
+            Orientation="Horizontal"
+            HorizontalAlignment="Right"
+            Spacing="8"
+        />
+    </StackPanel>
+</Window>

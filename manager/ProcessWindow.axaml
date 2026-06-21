@@ -1,0 +1,43 @@
+<Window
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    d:DesignWidth="700"
+    d:DesignHeight="450"
+    x:Class="manager.ProcessWindow"
+    Title="Process"
+    Width="700"
+    Height="450"
+    WindowStartupLocation="CenterOwner"
+>
+    <Grid RowDefinitions="*,Auto" Margin="8">
+        <ScrollViewer
+            x:Name="OutputScroll"
+            Grid.Row="0"
+            Background="#1e1e1e"
+            Margin="0,0,0,8"
+        >
+            <TextBlock
+                x:Name="OutputText"
+                FontFamily="Consolas, Courier New, monospace"
+                FontSize="13"
+                Foreground="#d4d4d4"
+                Text=""
+                TextWrapping="Wrap"
+                Margin="8"
+            />
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="12">
+            <TextBlock
+                x:Name="StatusText"
+                Text="Ready"
+                Foreground="#888"
+                VerticalAlignment="Center"
+            />
+            <Button x:Name="CloseButton" Content="Close" Width="80" />
+        </StackPanel>
+    </Grid>
+</Window>
