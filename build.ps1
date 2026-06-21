@@ -20,6 +20,15 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Build manager GUI
+Write-Host "=== Building dmvop-gui ===" -ForegroundColor Cyan
+dotnet publish manager/manager.csproj -c Release -o manager/publish
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "GUI build failed!" -ForegroundColor Red
+    Set-Location $OrigDir
+    exit 1
+}
+
 # Create build directory
 if (-not (Test-Path $BuildDir)) {
     New-Item -ItemType Directory -Path $BuildDir | Out-Null
@@ -30,6 +39,22 @@ Write-Host "=== Copying files ===" -ForegroundColor Cyan
 # 1. dmvop.exe
 Copy-Item (Join-Path $ReleaseDir "dmvop.exe") (Join-Path $BuildDir "dmvop.exe") -Force
 Write-Host "  [OK] dmvop.exe"
+
+# 1.5. gui launcher
+$LauncherSrc = Join-Path (Get-Location) "manager\launcher\dmvop-gui.exe"
+if (Test-Path $LauncherSrc) {
+    Copy-Item $LauncherSrc (Join-Path $BuildDir "dmvop-gui.exe") -Force
+    Write-Host "  [OK] dmvop-gui.exe"
+}
+
+# 1.6. gui
+$GuiSrc = Join-Path (Get-Location) "manager\publish"
+$GuiDst = Join-Path $BuildDir "gui"
+if (Test-Path (Join-Path $GuiSrc "manager.exe")) {
+    if (-not (Test-Path $GuiDst)) { New-Item -ItemType Directory -Path $GuiDst | Out-Null }
+    Copy-Item "$GuiSrc\*" $GuiDst -Recurse -Force
+    Write-Host "  [OK] gui\"
+}
 
 # 2. CUDA backend
 $CudaSrc = Join-Path $ReleaseDir "cuda"
