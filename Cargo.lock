@@ -577,7 +577,9 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "pinyin",
+ "serde",
  "tokio",
+ "toml",
  "tracing-subscriber",
  "vtx-engine",
 ]

@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 /// Whether verbose debug output is enabled.
-/// Set by `DMVOPArguments::verbose`.
 pub static VERBOSE: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// Print a debug message only when `--verbose` is set.
@@ -17,6 +16,10 @@ macro_rules! debug_log {
 /// The full help text embedded at compile time.
 pub static HELP_TEXT: &str = include_str!("../help.txt");
 
+// ===========================================================================
+// CLI arguments (clap)
+// ===========================================================================
+
 #[derive(clap::Parser)]
 #[command(name = "dmvop", disable_help_flag = true, disable_version_flag = true)]
 pub struct DMVOPArguments {
@@ -31,6 +34,10 @@ pub struct DMVOPArguments {
     // Verbose output (show debug messages)
     #[arg(long = "verbose", short = 'V')]
     pub verbose: bool,
+
+    // Config file path
+    #[arg(long = "config", require_equals = true)]
+    pub config: Option<PathBuf>,
 
     // List all available input devices and exit
     #[arg(long = "list-devices", alias = "list", short = 'L')]
@@ -127,6 +134,151 @@ pub struct DMVOPArguments {
     pub post: Option<String>,
 }
 
+// ===========================================================================
+// Configuration file (serde) — mirrors DMVOPArguments with all-Option fields
+// ===========================================================================
+
+/// Mirrors [`DMVOPArguments`] as a TOML-serialisable config.
+/// Every field is `Option` so the merge logic can tell what was explicitly set.
+#[derive(serde::Deserialize, Default)]
+#[serde(default)]
+pub struct DMVOPConfig {
+    pub instant: Option<bool>,
+    pub lang: Option<String>,
+    pub model: Option<String>,
+    pub device: Option<String>,
+    pub format: Option<String>,
+    pub format_file: Option<PathBuf>,
+    pub output: Option<Vec<String>>,
+    pub port: Option<u16>,
+    pub socket_file: Option<PathBuf>,
+    pub models_dir: Option<PathBuf>,
+    pub subnet_mask: Option<String>,
+    pub post: Option<String>,
+}
+
+/// Resolve a path in the config file relative to the config file's directory.
+fn resolve_config_path(config_file: &PathBuf, path: &PathBuf) -> PathBuf {
+    if path.is_absolute() {
+        path.clone()
+    } else if let Some(parent) = config_file.parent() {
+        parent.join(path)
+    } else {
+        path.clone()
+    }
+}
+
+/// Load config file, then merge CLI args on top.
+/// Config paths are resolved relative to the config file's directory.
+pub fn load_and_merge_config(config: Option<&PathBuf>) -> Option<DMVOPConfig> {
+    let config_path = config.cloned().or_else(|| {
+        let fallback = PathBuf::from("./dmvop.toml");
+        if fallback.exists() {
+            Some(fallback)
+        } else {
+            None
+        }
+    });
+
+    let config_path = config_path?;
+    let content = match std::fs::read_to_string(&config_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!(
+                "[dmvop] Failed to read config '{}': {}",
+                config_path.display(),
+                e
+            );
+            std::process::exit(1);
+        }
+    };
+
+    let mut cfg: DMVOPConfig = match toml::from_str(&content) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!(
+                "[dmvop] Failed to parse config '{}': {}",
+                config_path.display(),
+                e
+            );
+            std::process::exit(1);
+        }
+    };
+
+    // Resolve relative paths
+    if let Some(ref mut f) = cfg.format_file {
+        *f = resolve_config_path(&config_path, f);
+    }
+    if let Some(ref mut d) = cfg.models_dir {
+        *d = resolve_config_path(&config_path, d);
+    }
+    if let Some(ref mut s) = cfg.socket_file {
+        *s = resolve_config_path(&config_path, s);
+    }
+
+    Some(cfg)
+}
+
+/// Merge config file values into CLI args (CLI wins).
+pub fn apply_config(args: &mut DMVOPArguments, cfg: &DMVOPConfig) {
+    if let Some(v) = cfg.instant {
+        if !args.instant {
+            args.instant = v;
+        }
+    }
+    if let Some(ref v) = cfg.lang {
+        if args.lang.is_none() {
+            args.lang = Some(v.clone());
+        }
+    }
+    if let Some(ref v) = cfg.model {
+        args.model = v.clone();
+    }
+    if let Some(ref v) = cfg.device {
+        if args.device_name.is_none() {
+            args.device_name = Some(v.clone());
+        }
+    }
+    if let Some(ref v) = cfg.format {
+        if args.format_pattern.is_none() {
+            args.format_pattern = Some(v.clone());
+        }
+    }
+    if let Some(ref v) = cfg.format_file {
+        if args.format_file.is_none() {
+            args.format_file = Some(v.clone());
+        }
+    }
+    if let Some(ref v) = cfg.output {
+        if args.output.is_empty() {
+            args.output = v.iter().filter_map(|s| s.parse().ok()).collect();
+        }
+    }
+    if let Some(v) = cfg.port {
+        args.port = v;
+    }
+    if let Some(ref v) = cfg.socket_file {
+        args.socket_file = v.clone();
+    }
+    if let Some(ref v) = cfg.models_dir {
+        if args.models_dir.is_none() {
+            args.models_dir = Some(v.clone());
+        }
+    }
+    if let Some(ref v) = cfg.subnet_mask {
+        args.subnet_mask = v.clone();
+    }
+    if let Some(ref v) = cfg.post {
+        if args.post.is_none() {
+            args.post = Some(v.clone());
+        }
+    }
+}
+
+// ===========================================================================
+// Output mode enum
+// ===========================================================================
+
 #[derive(Clone, Debug)]
 #[allow(non_camel_case_types)]
 pub enum OutputMode {
@@ -163,13 +315,10 @@ impl std::str::FromStr for OutputMode {
     }
 }
 
-/// Parse a format pattern string and produce a formatted output string
-/// from the provided values.
-///
-/// Supported placeholders:
-/// - `%{vol}` — volume 0–100
-/// - `%{word}` — transcribed word/text
-/// - `%{confid}` / `%{confidence}` — confidence score
+// ===========================================================================
+// Format helpers
+// ===========================================================================
+
 pub fn format_output(pattern: &str, word: &str, confidence: f32, volume: f32) -> String {
     let mut result = pattern.to_string();
 

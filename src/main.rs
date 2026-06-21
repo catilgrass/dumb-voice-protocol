@@ -58,7 +58,7 @@ async fn main() {
         .with_target(false)
         .init();
 
-    let args = match DMVOPArguments::try_parse() {
+    let mut args = match DMVOPArguments::try_parse() {
         Ok(a) => a,
         Err(_) => {
             eprintln!("error: invalid arguments. Use --help for usage.");
@@ -70,6 +70,12 @@ async fn main() {
     if args.help {
         print!("{}", HELP_TEXT);
         return;
+    }
+
+    // Load config (--config or ./dmvop.toml) and merge (CLI wins)
+    if let Some(cfg) = load_and_merge_config(args.config.as_ref()) {
+        apply_config(&mut args, &cfg);
+        debug_log!("[dmvop] Loaded config");
     }
 
     // Set global verbose flag

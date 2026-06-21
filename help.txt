@@ -17,6 +17,7 @@ Options
                                  [default: 255.255.255.0]
   -L, --list-devices           List microphones and exit.
       --list-models            List Whisper models and exit.
+      --config=<path>          Config file (TOML). Falls back to ./dmvop.toml.
       --download-model=<name>  Download a model and exit.
       --instant                Aggressive mode — shorter segments for
                                 near-real-time output. Speak slowly.
