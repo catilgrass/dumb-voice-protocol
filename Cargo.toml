@@ -21,6 +21,9 @@ cpal = "0.18.1"
 git = "https://github.com/Weicao-CatilGrass/vtx-engine"
 rev = "35b954ad50ec6211e6a25ca4777d1685311f696e"
 
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3.0.9"
+
 [profile.dev]
 opt-level = 0
 debug = true
