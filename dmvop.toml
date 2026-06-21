@@ -36,7 +36,7 @@ output = [
     ## TCP service mode
     ## After the client connects to the current port (port configured in `port`)
     ## DMVOP will automatically broadcast output to all connected clients
-    # "tcp",
+    "tcp",
 
     ## UDP service mode
     ## The client sends a message packet to the current port to complete the handshake (port configured in `port`)
@@ -62,11 +62,6 @@ port = 5117
 ## Shorter detection time, closer to real-time
 instant = false
 
-## Model file storage directory
-## Used to specify the directory for downloading and reading Whisper model files
-## (Relative to the current configuration directory)
-models_dir = "./models"
-
 ## Subnet mask
 ## Used in UDP broadcast mode to specify the subnet mask for broadcasting
 subnet_mask = "255.255.255.0"
@@ -75,6 +70,11 @@ subnet_mask = "255.255.255.0"
 ## Used in IPC socket mode to specify the Unix socket file
 ## Note: This mode is only supported on UNIX systems
 socket_file = "./dmvop.sock"
+
+## Model file storage directory
+## Used to specify the directory for downloading and reading Whisper model files
+## (Relative to the current configuration directory)
+# models_dir = "./models"
 
 ## Post-processor
 ## After text parsing, a post-processor can be used to process the text content

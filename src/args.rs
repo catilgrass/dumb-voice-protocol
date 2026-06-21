@@ -81,13 +81,7 @@ pub struct DMVOPArguments {
     // vol   : volume 0-100
     // word  : word
     // confid: confidence
-    #[arg(
-        long = "format",
-        short,
-        alias = "fmt",
-        default_value = "%{vol},%{word}",
-        require_equals = true
-    )]
+    #[arg(long = "format", short, alias = "fmt", require_equals = true)]
     pub format_pattern: Option<String>,
 
     #[arg(long = "format-file", short = 'S', require_equals = true)]
