@@ -12,7 +12,7 @@ path = "src/main.rs"
 clap = { version = "4.6.1", features = ["derive"] }
 tokio = { version = "1.52.3", features = ["net", "rt", "rt-multi-thread", "macros"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-pinyin = "0.11.0"
+pinyin = { version = "0.11.0", features = ["with_tone", "with_tone_num", "with_tone_num_end"] }
 
 [dependencies.vtx-engine]
 git = "https://github.com/Weicao-CatilGrass/vtx-engine"

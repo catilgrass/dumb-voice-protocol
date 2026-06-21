@@ -1,3 +1,5 @@
+pub mod post_proc;
+
 mod args;
 pub use args::*;
 
@@ -252,7 +254,7 @@ async fn main() {
         match rx.recv().await {
             Ok(event) => match event {
                 vtx_engine::EngineEvent::TranscriptionComplete(result) => {
-                    let raw = maybe_to_pinyin(&result.text, args.use_pinyin);
+                    let raw = run_post_process(&result.text, args.post.as_deref());
                     let formatted = format_output(&pattern, &raw, 0.0, last_volume_db);
 
                     for ch in &channels {
@@ -260,7 +262,7 @@ async fn main() {
                     }
                 }
                 vtx_engine::EngineEvent::TranscriptionSegment(segment) => {
-                    let raw = maybe_to_pinyin(&segment.text, args.use_pinyin);
+                    let raw = run_post_process(&segment.text, args.post.as_deref());
                     let formatted = format_output(&pattern, &raw, 0.0, last_volume_db);
 
                     for ch in &channels {

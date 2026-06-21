@@ -118,9 +118,9 @@ pub struct DMVOPArguments {
     )]
     pub subnet_mask: String,
 
-    // Convert text output to pinyin (Chinese romanization)
-    #[arg(long = "pinyin")]
-    pub use_pinyin: bool,
+    // Post-processing pipeline, e.g. --post="+pinyin()" or --post="+reverse"
+    #[arg(long = "post", require_equals = true)]
+    pub post: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -182,13 +182,43 @@ pub fn format_output(pattern: &str, word: &str, confidence: f32, volume: f32) ->
     result
 }
 
-/// Convert transcribed text to pinyin if the `use_pinyin` flag is set.
-/// Otherwise returns the original text as a String.
-pub fn maybe_to_pinyin(text: &str, use_pinyin: bool) -> String {
-    if use_pinyin {
-        pinyin::to_pinyin_vec(text, pinyin::Pinyin::plain).join(" ")
-    } else {
-        text.to_string()
+/// Parse a post-processor spec in the form `+function_name(arg1, arg2, ...)`.
+/// Returns `(name, args)`.
+pub fn parse_post_spec(spec: &str) -> (&str, Vec<&str>) {
+    let spec = spec.trim();
+    if !spec.starts_with('+') {
+        return (spec, vec![]);
+    }
+    let inner = &spec[1..];
+    if let Some(paren) = inner.find('(') {
+        if inner.ends_with(')') {
+            let name = inner[..paren].trim();
+            let args_str = inner[paren + 1..inner.len() - 1].trim();
+            let args: Vec<&str> = if args_str.is_empty() {
+                vec![]
+            } else {
+                // Simple comma split (no nested parens, no escape handling for now)
+                args_str.split(',').map(|a| a.trim()).collect()
+            };
+            return (name, args);
+        }
+    }
+    // No parens → no args
+    (inner.trim(), vec![])
+}
+
+/// Run the post-processing pipeline on the given text.
+pub fn run_post_process(text: &str, spec: Option<&str>) -> String {
+    let Some(spec) = spec else {
+        return text.to_string();
+    };
+    let (name, args) = parse_post_spec(spec);
+    match crate::post_proc::run(text, name, &args) {
+        Some(result) => result,
+        None => {
+            eprintln!("[dmvop] Unknown post-processor: '{}'", name);
+            text.to_string()
+        }
     }
 }
 

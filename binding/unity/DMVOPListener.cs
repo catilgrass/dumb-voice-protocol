@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.Events;
 
 // Chinese:
-// dmvop --output=tcp --port=5117 --model=small --lang=zh --instant --pinyin --device=YOUR_DEVICE
+// dmvop --output=tcp --port=5117 --model=small --lang=zh --instant --post="+pinyin" --device=YOUR_DEVICE
 //
 // English
 // dmvop --output=tcp --port=5117 --model=small.en --lang=en --instant --device=YOUR_DEVICE
