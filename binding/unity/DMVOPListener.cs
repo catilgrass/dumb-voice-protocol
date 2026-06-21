@@ -7,10 +7,10 @@ using UnityEngine;
 using UnityEngine.Events;
 
 // Chinese:
-// dmvop --output=tcp --port=5117 --model=small --lang=zh --instant --post="+pinyin" --device=YOUR_DEVICE
+// dmvop --output=tcp --port=5117 --model=small --lang=zh --instant --post="+pinyin" --device=auto
 //
 // English
-// dmvop --output=tcp --port=5117 --model=small.en --lang=en --instant --device=YOUR_DEVICE
+// dmvop --output=tcp --port=5117 --model=small.en --lang=en --instant --device=auto
 
 [Serializable]
 public struct DMVOPEvent
