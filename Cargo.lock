@@ -2573,7 +2573,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 [[package]]
 name = "vtx-engine"
 version = "0.3.1"
-source = "git+https://github.com/Weicao-CatilGrass/vtx-engine?rev=864889b97c52d31098670d33e10d62a96ec8c41e#864889b97c52d31098670d33e10d62a96ec8c41e"
+source = "git+https://github.com/Weicao-CatilGrass/vtx-engine?rev=35b954ad50ec6211e6a25ca4777d1685311f696e#35b954ad50ec6211e6a25ca4777d1685311f696e"
 dependencies = [
  "aec3",
  "block2",

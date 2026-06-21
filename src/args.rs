@@ -109,7 +109,11 @@ pub struct DMVOPArguments {
     )]
     pub socket_file: PathBuf,
 
-    // Subnet mask for UDP broadcast (default: only last octet, e.g., "255.255.255.0")
+    // Custom directory for model files
+    #[arg(long = "models-dir", alias = "models", require_equals = true)]
+    pub models_dir: Option<PathBuf>,
+
+    // Subnet mask for UDP broadcast (default: only last octet, e.g., "255.255.255.255.0")
     #[arg(
         long = "subnet-mask",
         alias = "mask",

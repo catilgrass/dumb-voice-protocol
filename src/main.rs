@@ -93,7 +93,7 @@ async fn main() {
     // --download-model: download a specific model and exit
     // ---------------------------------------------------------------
     if let Some(ref model_name) = args.download_model {
-        download_model_cli(model_name).await;
+        download_model_cli(model_name, args.models_dir.clone()).await;
         return;
     }
 
@@ -116,7 +116,32 @@ async fn main() {
         model.display_name()
     );
 
-    let mut builder = EngineBuilder::new().app_name("dmvop").model(model);
+    let mut builder = EngineBuilder::new().app_name("dmvop");
+
+    // Apply --models-dir: construct explicit model path, fail on invalid dir
+    if let Some(ref dir) = args.models_dir {
+        if dir.is_file() {
+            eprintln!(
+                "[dmvop] --models-dir '{}' is a file, not a directory.",
+                dir.display()
+            );
+            std::process::exit(1);
+        }
+        if !dir.exists() {
+            if let Err(e) = std::fs::create_dir_all(dir) {
+                eprintln!(
+                    "[dmvop] Failed to create models directory '{}': {}",
+                    dir.display(),
+                    e
+                );
+                std::process::exit(1);
+            }
+        }
+        debug_log!("[dmvop] Models directory: {}", dir.display());
+        builder = builder.models_dir(dir);
+    } else {
+        builder = builder.model(model);
+    }
 
     if args.instant {
         debug_log!("[dmvop] Instant mode: aggressive VAD for near-real-time output");
@@ -137,27 +162,6 @@ async fn main() {
 
     // Disable PTT mode so VAD drives automatic segmentation
     engine.set_ptt_mode(false);
-
-    // ---------------------------------------------------------------
-    // Check model availability and download if needed
-    // ---------------------------------------------------------------
-    let model_status = engine.check_model_status();
-    if !model_status.available {
-        eprintln!("[dmvop] Model not found at: {}", model_status.path);
-        eprintln!("[dmvop] Downloading model, please wait...");
-        match engine.download_model().await {
-            Ok(_) => debug_log!("[dmvop] Model downloaded successfully"),
-            Err(e) => {
-                eprintln!("[dmvop] Failed to download model: {}", e);
-                eprintln!("[dmvop] You can manually download a model from:");
-                eprintln!("[dmvop]   https://huggingface.co/ggerganov/whisper.cpp/tree/main");
-                eprintln!("[dmvop]   Place it at: {}", model_status.path);
-                std::process::exit(1);
-            }
-        }
-    } else {
-        debug_log!("[dmvop] Model found: {}", model_status.path);
-    }
 
     // ---------------------------------------------------------------
     // List devices and exit?
@@ -404,7 +408,7 @@ fn list_models() {
 }
 
 /// Download a specific Whisper model by identifier.
-async fn download_model_cli(model_name: &str) {
+async fn download_model_cli(model_name: &str, models_dir: Option<PathBuf>) {
     let model = match vtx_engine::WhisperModel::parse_identifier(model_name) {
         Some(m) => m,
         None => {
@@ -421,12 +425,31 @@ async fn download_model_cli(model_name: &str) {
         model.config_key()
     );
 
-    let (engine, _rx) = match EngineBuilder::new()
-        .app_name("dmvop")
-        .model(model)
-        .build()
-        .await
-    {
+    let mut builder = EngineBuilder::new().app_name("dmvop");
+    if let Some(ref dir) = models_dir {
+        if dir.is_file() {
+            eprintln!(
+                "[dmvop] --models-dir '{}' is a file, not a directory.",
+                dir.display()
+            );
+            std::process::exit(1);
+        }
+        if !dir.exists() {
+            if let Err(e) = std::fs::create_dir_all(dir) {
+                eprintln!(
+                    "[dmvop] Failed to create models directory '{}': {}",
+                    dir.display(),
+                    e
+                );
+                std::process::exit(1);
+            }
+        }
+        builder = builder.models_dir(dir);
+    } else {
+        builder = builder.model(model);
+    }
+
+    let (engine, _rx) = match builder.build().await {
         Ok(e) => e,
         Err(e) => {
             eprintln!("[dmvop] Failed to build engine: {}", e);

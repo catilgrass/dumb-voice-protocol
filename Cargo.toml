@@ -16,7 +16,7 @@ pinyin = { version = "0.11.0", features = ["with_tone", "with_tone_num", "with_t
 
 [dependencies.vtx-engine]
 git = "https://github.com/Weicao-CatilGrass/vtx-engine"
-rev = "864889b97c52d31098670d33e10d62a96ec8c41e"
+rev = "35b954ad50ec6211e6a25ca4777d1685311f696e"
 
 [profile.dev]
 opt-level = 0

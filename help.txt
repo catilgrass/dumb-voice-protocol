@@ -7,6 +7,7 @@ Options
   -m, --model=<model>          Whisper model. [default: base_en]
       --lang=<code>            Language hint (zh, ja, en, fr...). Skips detection.
       --post=<spec>            Post-process transcribed text, e.g. +pinyin
+      --models-dir=<path>      Directory for model files. Fails if invalid.
   -f, --format=<pattern>       Output format with %{vol}, %{word}, %{confid}.
                                  [default: %{vol},%{word}]
   -S, --format-file=<path>     Read format from file.
