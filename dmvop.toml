@@ -13,7 +13,13 @@ device = "auto"
 ##    - %{vol}    Volume
 ##    - %{word}   Content
 ##    - %{confid} Confidence score
-format = "%{word} (%%{vol})" # Hello. (%50)
+
+## For Game Engines
+format = "%{vol},%{word}" # 50,Hello
+
+## For Human
+# format = "%{word} (%%{vol})" # Hello. (%50)
+
 
 ## Whisper model selection
 ## Use `dmvop --list-models` to view available models
