@@ -1,0 +1,81 @@
+## DMVOP Config File
+## Name this file `dmvop.toml` and place it in the working dir to be auto-detected!
+##
+## DMVOP will auto-load this config file to avoid repeated CLI args
+
+## Your audio input device, you can query with `dmvop --list-devices`
+## Use `auto` to automatically get the device in use
+device = "auto"
+
+## Output format
+## Sets the text format after transcription
+## Supported parameters:
+##    - %{vol}    Volume
+##    - %{word}   Content
+##    - %{confid} Confidence score
+format = "%{word} (%%{vol})" # Hello. (%50)
+
+## Whisper model selection
+## Use `dmvop --list-models` to view available models
+## Use `dmvop --download-model=<NAME>` to download available models
+## (Model download and reading directory is configured in `models_dir`, relative to the current configuration directory)
+model = "base.en"
+
+## Expected language for Whisper to recognize
+## This makes it more inclined to recognize the specified language
+lang = "en"
+
+## Expected output mode
+output = [
+    ## Directly use stdout to output to terminal
+    "stdout",
+
+    ## Directly use stderr to output to terminal
+    # "stderr",
+
+    ## TCP service mode
+    ## After the client connects to the current port (port configured in `port`)
+    ## DMVOP will automatically broadcast output to all connected clients
+    # "tcp",
+
+    ## UDP service mode
+    ## The client sends a message packet to the current port to complete the handshake (port configured in `port`)
+    ## After that, DMVOP will automatically send content to the first client that handshook
+    # "udp",
+
+    ## UDP broadcast mode
+    ## When enabled, DMVOP will directly broadcast messages to all devices on the LAN listening to the specified port
+    ## (port configured in `port`, subnet mask configured in `subnet_mask`)
+    # "udp-broadcast",
+
+    ## IPC socket mode
+    ## Sends messages to the specified Unix socket file
+    ## (use `socket_file` to specify the socket file)
+    ## Note: This mode is only supported on UNIX
+    # "ipc"
+]
+
+## Port used in UDP / TCP / UDP_BROADCAST mode
+port = 5117
+
+## Instant mode
+## Shorter detection time, closer to real-time
+instant = false
+
+## Model file storage directory
+## Used to specify the directory for downloading and reading Whisper model files
+## (Relative to the current configuration directory)
+models_dir = "./models"
+
+## Subnet mask
+## Used in UDP broadcast mode to specify the subnet mask for broadcasting
+subnet_mask = "255.255.255.0"
+
+## IPC socket file path
+## Used in IPC socket mode to specify the Unix socket file
+## Note: This mode is only supported on UNIX systems
+socket_file = "./dmvop.sock"
+
+## Post-processor
+## After text parsing, a post-processor can be used to process the text content
+# post = "+pinyin(tone)"

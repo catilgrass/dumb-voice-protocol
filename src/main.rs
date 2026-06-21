@@ -3,7 +3,9 @@ pub mod post_proc;
 mod args;
 pub use args::*;
 
+mod device_selector;
 mod output_protocol;
+
 use clap::Parser;
 use output_protocol::OutputProtocol;
 use std::path::PathBuf;
@@ -220,30 +222,14 @@ async fn main() {
     // ---------------------------------------------------------------
     // Find the requested device and start capture
     // ---------------------------------------------------------------
-    let device_name = match &args.device_name {
-        Some(n) => n.as_str(),
-        None => {
-            eprintln!(
-                "[dmvop] No device specified. Use --device=<name> or --list-devices to see available devices."
-            );
-            std::process::exit(1);
-        }
-    };
-
-    let device = devices
-        .iter()
-        .find(|d| d.id == device_name || d.name == device_name)
-        .or_else(|| devices.first());
+    let device = device_selector::pick_device(&args.device_name, &devices);
 
     match &device {
         Some(d) => {
             debug_log!("[dmvop] Using input device: {} (id: {})", d.name, d.id);
         }
         None => {
-            eprintln!(
-                "[dmvop] Device '{}' not found and no fallback available.",
-                device_name
-            );
+            eprintln!("[dmvop] No input devices found. Make sure a microphone is connected.");
             std::process::exit(1);
         }
     }

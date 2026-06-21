@@ -69,7 +69,8 @@ pub struct DMVOPArguments {
         long = "device",
         alias = "dev",
         allow_hyphen_values = true,
-        require_equals = true
+        require_equals = true,
+        default_value = "auto"
     )]
     pub device_name: Option<String>,
 
