@@ -1,0 +1,18 @@
+{
+    "FileVersion": 3,
+    "Version": 0,
+    "VersionName": "0.1.0",
+    "FriendlyName": "Dumb Voice Protocol - UE Binding",
+    "Description": "TCP client for dmvop voice input in Unreal Engine",
+    "Category": "Input",
+    "CreatedBy": "Weicao-CatilGrass",
+    "CreatedByURL": "https://github.com/catilgrass/dumb-voice-protocol",
+    "DocsURL": "https://github.com/catilgrass/dumb-voice-protocol",
+    "Modules": [
+        {
+            "Name": "DMVOPBridge",
+            "Type": "Runtime",
+            "LoadingPhase": "Default"
+        }
+    ]
+}

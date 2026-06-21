@@ -1,0 +1,6 @@
+build/
+.host/
+
+DMVOPBridge/Config
+DMVOPBridge/Binaries
+DMVOPBridge/Intermediate

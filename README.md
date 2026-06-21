@@ -36,6 +36,23 @@ dmvop --list-devices                            # List microphone devices
 dmvop --download-model=small                    # Download whisper model
 ```
 
+## Game Engine Binding
+
+### 1. Unity
+
+Place `binding\unity\DMVOPListener.cs` into your Unity project's `Assets` folder and it's ready to use.
+
+### 2. Unreal
+
+1. Build the binding plugin with the following command:
+
+```powershell
+.\binding\unreal\build-plugin.ps1 -UE "F:\YourUnrealEngine\UE_5.x"
+```
+
+2. Copy the `binding\unreal\build\DMVOPBridge` directory to your project or engine's `Plugins` folder.
+3. Enable the `DMVOPBridge` plugin in the Unreal Editor.
+
 ## License
 
 Under WTFPL
