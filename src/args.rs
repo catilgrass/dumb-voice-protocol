@@ -214,40 +214,29 @@ pub fn load_and_merge_config(config: Option<&PathBuf>) -> Option<DMVOPConfig> {
     Some(cfg)
 }
 
-/// Merge config file values into CLI args (CLI wins).
+/// Override args with config file values (config wins over CLI).
+/// When a config file is present, its values take full precedence.
 pub fn apply_config(args: &mut DMVOPArguments, cfg: &DMVOPConfig) {
     if let Some(v) = cfg.instant {
-        if !args.instant {
-            args.instant = v;
-        }
+        args.instant = v;
     }
     if let Some(ref v) = cfg.lang {
-        if args.lang.is_none() {
-            args.lang = Some(v.clone());
-        }
+        args.lang = Some(v.clone());
     }
     if let Some(ref v) = cfg.model {
         args.model = v.clone();
     }
     if let Some(ref v) = cfg.device {
-        if args.device_name.is_none() {
-            args.device_name = Some(v.clone());
-        }
+        args.device_name = Some(v.clone());
     }
     if let Some(ref v) = cfg.format {
-        if args.format_pattern.is_none() {
-            args.format_pattern = Some(v.clone());
-        }
+        args.format_pattern = Some(v.clone());
     }
     if let Some(ref v) = cfg.format_file {
-        if args.format_file.is_none() {
-            args.format_file = Some(v.clone());
-        }
+        args.format_file = Some(v.clone());
     }
     if let Some(ref v) = cfg.output {
-        if args.output.is_empty() {
-            args.output = v.iter().filter_map(|s| s.parse().ok()).collect();
-        }
+        args.output = v.iter().filter_map(|s| s.parse().ok()).collect();
     }
     if let Some(v) = cfg.port {
         args.port = v;
@@ -256,17 +245,13 @@ pub fn apply_config(args: &mut DMVOPArguments, cfg: &DMVOPConfig) {
         args.socket_file = v.clone();
     }
     if let Some(ref v) = cfg.models_dir {
-        if args.models_dir.is_none() {
-            args.models_dir = Some(v.clone());
-        }
+        args.models_dir = Some(v.clone());
     }
     if let Some(ref v) = cfg.subnet_mask {
         args.subnet_mask = v.clone();
     }
     if let Some(ref v) = cfg.post {
-        if args.post.is_none() {
-            args.post = Some(v.clone());
-        }
+        args.post = Some(v.clone());
     }
 }
 
