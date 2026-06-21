@@ -32,6 +32,8 @@ public:
   FOnDMVOPVoiceInput OnVoiceInput;
 
 private:
+  void cleanup();
+
   FSocket *Socket;
   FString PartialLine;
   std::thread ReaderThread;

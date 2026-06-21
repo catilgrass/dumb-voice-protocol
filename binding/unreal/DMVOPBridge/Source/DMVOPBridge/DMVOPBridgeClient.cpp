@@ -4,10 +4,22 @@
 
 UDMVOPClient::UDMVOPClient() : Socket(nullptr) {}
 
-UDMVOPClient::~UDMVOPClient() {
+UDMVOPClient::~UDMVOPClient() { cleanup(); }
+
+void UDMVOPClient::cleanup() {
+  // SAFETY: signal the reader thread to stop, then close the socket so
+  // Recv() unblocks immediately. After the thread exits, destroy the socket.
+  // The thread checks bRunning on every iteration and after each Recv().
   bRunning.store(false);
-  // Don't call Disconnect() here — UE GC may crash.
-  // Socket will be cleaned up by the OS on process exit.
+  if (Socket) {
+    Socket->Close(); // unblocks Recv() in the reader thread
+  }
+  if (ReaderThread.joinable())
+    ReaderThread.join(); // thread exits after Recv() fails + bRunning check
+  if (Socket) {
+    ISocketSubsystem::Get()->DestroySocket(Socket);
+    Socket = nullptr;
+  }
 }
 
 void UDMVOPClient::Connect(const FString &Host, int32 Port) {
@@ -26,6 +38,7 @@ void UDMVOPClient::Connect(const FString &Host, int32 Port) {
   Addr->SetPort(Port);
 
   Socket = FTcpSocketBuilder(TEXT("DMVOPSocket")).AsNonBlocking().Build();
+
   if (!Socket->Connect(*Addr)) {
     UE_LOG(LogTemp, Error, TEXT("DMVOP: Failed to connect"));
     Socket->Close();
@@ -41,12 +54,12 @@ void UDMVOPClient::Connect(const FString &Host, int32 Port) {
   TWeakObjectPtr<UDMVOPClient> WeakThis(this);
   FSocket *Sock = Socket;
 
-  ReaderThread = std::thread([WeakThis, Sock]() {
+  ReaderThread = std::thread([WeakThis, Sock, this]() {
     TArray<uint8> Buf;
     Buf.SetNumUninitialized(4096);
     FString Partial;
 
-    while (true) {
+    while (this->bRunning.load()) {
       int32 Read = 0;
       if (!Sock->Recv(Buf.GetData(), Buf.Num(), Read,
                       ESocketReceiveFlags::None) ||
@@ -80,14 +93,6 @@ void UDMVOPClient::Connect(const FString &Host, int32 Port) {
       }
     }
   });
-
-  ReaderThread.detach();
 }
 
-void UDMVOPClient::Disconnect() {
-  bRunning.store(false);
-  if (Socket) {
-    Socket->Close();
-    Socket = nullptr;
-  }
-}
+void UDMVOPClient::Disconnect() { cleanup(); }
