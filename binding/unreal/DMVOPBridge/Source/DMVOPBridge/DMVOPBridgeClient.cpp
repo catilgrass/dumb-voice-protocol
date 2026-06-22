@@ -1,75 +1,170 @@
 #include "DMVOPBridgeClient.h"
-#include "Common/TcpSocketBuilder.h"
 #include "IPAddress.h"
+#include "Interfaces/IPv4/IPv4Address.h"
 
-UDMVOPClient::UDMVOPClient() : Socket(nullptr) {}
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+// Undef Windows macros that conflict with UE types
+#ifdef SetPort
+#undef SetPort
+#endif
+#endif
 
-UDMVOPClient::~UDMVOPClient() { cleanup(); }
+// ═════════════════════════════════════════════════════════════════════════════
+// FDMVOPWorker
+// ═════════════════════════════════════════════════════════════════════════════
 
-void UDMVOPClient::cleanup() {
-  // SAFETY: signal the reader thread to stop, then close the socket so
-  // Recv() unblocks immediately. After the thread exits, destroy the socket.
-  // The thread checks bRunning on every iteration and after each Recv().
-  bRunning.store(false);
-  if (Socket) {
-    Socket->Close(); // unblocks Recv() in the reader thread
-  }
-  if (ReaderThread.joinable())
-    ReaderThread.join(); // thread exits after Recv() fails + bRunning check
-  if (Socket) {
-    ISocketSubsystem::Get()->DestroySocket(Socket);
-    Socket = nullptr;
+FDMVOPWorker::FDMVOPWorker(TWeakObjectPtr<UDMVOPClient> InOwner, FString InHost,
+                           int32 InPort)
+    : bRun(false), Socket(nullptr), Owner(InOwner), Host(MoveTemp(InHost)),
+      Port(InPort), Thread(nullptr) {}
+
+FDMVOPWorker::~FDMVOPWorker() {
+  Stop();
+  if (Thread) {
+    Thread->WaitForCompletion();
+    delete Thread;
+    Thread = nullptr;
   }
 }
 
-void UDMVOPClient::Connect(const FString &Host, int32 Port) {
-  if (Socket)
-    return;
+void FDMVOPWorker::Start() {
+  Thread = FRunnableThread::Create(
+      this, *FString::Printf(TEXT("DMVOP %s:%d"), *Host, Port), 128 * 1024,
+      TPri_Normal);
+}
 
-  FIPv4Address IP;
-  if (!FIPv4Address::Parse(Host, IP)) {
-    UE_LOG(LogTemp, Error, TEXT("DMVOP: Invalid IP %s"), *Host);
-    return;
+bool FDMVOPWorker::Init() {
+  bRun = true;
+  return true;
+}
+
+uint32 FDMVOPWorker::Run() {
+  // ── Create socket ──
+  Socket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)
+               ->CreateSocket(NAME_Stream, TEXT("DMVOP"), false);
+  if (!Socket) {
+    return 0;
   }
 
-  TSharedRef<FInternetAddr> Addr =
-      ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
-  Addr->SetIp(IP.Value);
-  Addr->SetPort(Port);
+  int32 RecvSize = 0, SendSize = 0;
+  Socket->SetReceiveBufferSize(16384, RecvSize);
+  Socket->SetSendBufferSize(16384, SendSize);
 
-  Socket = FTcpSocketBuilder(TEXT("DMVOPSocket")).AsNonBlocking().Build();
-
-  if (!Socket->Connect(*Addr)) {
-    UE_LOG(LogTemp, Error, TEXT("DMVOP: Failed to connect"));
+  // ── Resolve address ──
+  FIPv4Address AddrIP;
+  if (!FIPv4Address::Parse(Host, AddrIP)) {
     Socket->Close();
-    ISocketSubsystem::Get()->DestroySocket(Socket);
+    delete Socket;
     Socket = nullptr;
-    return;
+    return 0;
   }
 
-  UE_LOG(LogTemp, Log, TEXT("DMVOP: Connected to %s:%d"), *Host, Port);
+  TSharedRef<FInternetAddr> DstAddr =
+      ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+  DstAddr->SetIp(AddrIP.Value);
+  DstAddr->SetPort(Port);
 
-  // Start reader thread
-  bRunning.store(true);
-  TWeakObjectPtr<UDMVOPClient> WeakThis(this);
-  FSocket *Sock = Socket;
+  // ── Connect ──
+  if (!Socket->Connect(*DstAddr)) {
+    TWeakObjectPtr<UDMVOPClient> WeakOwner = Owner;
+    AsyncTask(ENamedThreads::GameThread, [WeakOwner]() {
+      if (auto *Self = WeakOwner.Get())
+        UE_LOG(LogTemp, Error, TEXT("DMVOP: Failed to connect"));
+    });
+    Socket->Close();
+    delete Socket;
+    Socket = nullptr;
+    return 0;
+  }
 
-  ReaderThread = std::thread([WeakThis, Sock, this]() {
-    TArray<uint8> Buf;
-    Buf.SetNumUninitialized(4096);
-    FString Partial;
+  TWeakObjectPtr<UDMVOPClient> WeakOwner = Owner;
+  AsyncTask(ENamedThreads::GameThread, [WeakOwner]() {
+    if (auto *Self = WeakOwner.Get())
+      UE_LOG(LogTemp, Log, TEXT("DMVOP: Connected"));
+  });
 
-    while (this->bRunning.load()) {
-      int32 Read = 0;
-      if (!Sock->Recv(Buf.GetData(), Buf.Num(), Read,
-                      ESocketReceiveFlags::None) ||
-          Read == 0) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        continue;
+  // ── Main loop ──
+  TArray<uint8> Buf;
+  Buf.SetNumUninitialized(4096);
+  FString Partial;
+
+#ifdef _WIN32
+  // Raw socket for comparison (same destination, bypasses UE layer)
+  SOCKET RawSock = INVALID_SOCKET;
+  bool bRawOK = false;
+  RawSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (RawSock != INVALID_SOCKET) {
+    struct sockaddr_in RawAddr;
+    FMemory::Memzero(&RawAddr, sizeof(RawAddr));
+    RawAddr.sin_family = AF_INET;
+    RawAddr.sin_port = htons(Port);
+    inet_pton(AF_INET, TCHAR_TO_UTF8(*Host), &RawAddr.sin_addr);
+    if (connect(RawSock, (struct sockaddr *)&RawAddr, sizeof(RawAddr)) == 0) {
+      bRawOK = true;
+      u_long Mode = 1;
+      ioctlsocket(RawSock, FIONBIO, &Mode);
+      UE_LOG(LogTemp, Log, TEXT("DMVOP: Raw socket connected for comparison"));
+    } else {
+      closesocket(RawSock);
+      RawSock = INVALID_SOCKET;
+    }
+  }
+#endif
+
+  while (bRun) {
+    FDateTime TickStart = FDateTime::UtcNow();
+
+    // Peek check
+    Socket->SetNonBlocking(true);
+    int32 DummyRead = 0;
+    uint8 Dummy;
+    bool bPeekOK =
+        Socket->Recv(&Dummy, 1, DummyRead, ESocketReceiveFlags::Peek);
+    Socket->SetNonBlocking(false);
+
+    if (!bPeekOK) {
+      break;
+    }
+
+    // Receive data
+    while (bRun) {
+      uint32 PendingSize = 0;
+      bool bHasData = Socket->HasPendingData(PendingSize) && PendingSize > 0;
+
+#ifdef _WIN32
+      // Compare: does raw socket have data when UE socket doesn't?
+      bool bRawHasData = false;
+      if (bRawOK) {
+        char RawBuf[1];
+        int RawRead = recv(RawSock, RawBuf, 1, MSG_PEEK);
+        bRawHasData = (RawRead > 0);
+        if (bHasData != bRawHasData) {
+          static int LogCount = 0;
+          if (++LogCount <= 5) {
+            UE_LOG(LogTemp, Log, TEXT("DMVOP: COMPARE UE=%d Raw=%d (Peek=%d)"),
+                   bHasData, bRawHasData, RawRead);
+          }
+        }
+      }
+#endif
+
+      if (!bHasData) {
+        break;
       }
 
-      Partial += FString(
-          Read, UTF8_TO_TCHAR(reinterpret_cast<const char *>(Buf.GetData())));
+      Buf.SetNumUninitialized(FMath::Max(PendingSize, 4096u));
+      int32 ReadNow = 0;
+      if (!Socket->Recv(Buf.GetData(), (int32)PendingSize, ReadNow,
+                        ESocketReceiveFlags::None) ||
+          ReadNow <= 0) {
+        break;
+      }
+
+      Partial +=
+          FString(ReadNow,
+                  UTF8_TO_TCHAR(reinterpret_cast<const char *>(Buf.GetData())));
 
       int32 Idx;
       while (Partial.FindChar('\n', Idx)) {
@@ -86,13 +181,67 @@ void UDMVOPClient::Connect(const FString &Host, int32 Port) {
           Text = Line.Mid(Comma + 1);
         }
 
-        AsyncTask(ENamedThreads::GameThread, [WeakThis, Vol, Text]() {
-          if (auto *Self = WeakThis.Get())
-            Self->OnVoiceInput.Broadcast(Vol, Text);
+        TWeakObjectPtr<UDMVOPClient> InnerOwner = Owner;
+        AsyncTask(ENamedThreads::GameThread, [InnerOwner, Vol, Text]() {
+          if (auto *Self = InnerOwner.Get())
+            Self->DispatchVoiceInput(Vol, Text);
         });
       }
     }
-  });
+
+    // Sleep
+    FTimespan Elapsed = FDateTime::UtcNow() - TickStart;
+    float SleepSec = 0.008f - (float)Elapsed.GetTotalSeconds();
+    if (SleepSec > 0.0f) {
+      FPlatformProcess::Sleep(SleepSec);
+    }
+  }
+
+  // ── Cleanup ──
+#ifdef _WIN32
+  if (bRawOK) {
+    closesocket(RawSock);
+  }
+#endif
+
+  if (Socket) {
+    Socket->Close();
+    delete Socket;
+    Socket = nullptr;
+  }
+  return 0;
 }
 
-void UDMVOPClient::Disconnect() { cleanup(); }
+void FDMVOPWorker::Stop() { bRun = false; }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// UDMVOPClient
+// ═════════════════════════════════════════════════════════════════════════════
+
+UDMVOPClient::UDMVOPClient() {}
+
+UDMVOPClient::~UDMVOPClient() {
+  if (Worker.IsValid()) {
+    Worker.Reset();
+  }
+}
+
+void UDMVOPClient::Connect(const FString &Host, int32 Port) {
+  if (Worker.IsValid()) {
+    UE_LOG(LogTemp, Warning, TEXT("DMVOP: Already connected"));
+    return;
+  }
+  UE_LOG(LogTemp, Log, TEXT("DMVOP: Connecting to %s:%d..."), *Host, Port);
+  Worker = MakeShareable(new FDMVOPWorker(this, Host, Port));
+  Worker->Start();
+}
+
+void UDMVOPClient::Disconnect() {
+  if (Worker.IsValid()) {
+    Worker.Reset();
+  }
+}
+
+void UDMVOPClient::DispatchVoiceInput(float Vol, const FString &Text) {
+  OnVoiceInput.Broadcast(Vol, Text);
+}
