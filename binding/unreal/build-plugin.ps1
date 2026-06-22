@@ -56,8 +56,17 @@ if ($Full -or -not (Test-Path $Output)) {
         -Plugin="$Plugin" `
         -TargetType=Editor
 
-    # Copy built DLL to output dir
-    $DllSrc = "$HostDir\Binaries"
+    # Ensure output has the base plugin files (.uplugin, Config, etc.)
+    if (-not (Test-Path (Join-Path $Output "DMVOPBridge.uplugin"))) {
+        Write-Host "  Copying plugin skeleton..." -ForegroundColor DarkYellow
+        Copy-Item (Join-Path $PluginDir "*.uplugin") $Output -Force
+        if (Test-Path (Join-Path $PluginDir "Config")) {
+            Copy-Item (Join-Path $PluginDir "Config") $Output -Recurse -Force
+        }
+    }
+
+    # Copy compiled binaries
+    $DllSrc = "$PluginDir\Binaries"
     $DllDst = "$Output\Binaries"
     if (Test-Path $DllSrc) {
         Copy-Item $DllSrc $DllDst -Recurse -Force
